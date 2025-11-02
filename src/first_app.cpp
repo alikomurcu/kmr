@@ -28,9 +28,9 @@ namespace kmr {
 
     void FirstApp::loadModels() {
         std::vector<KmrModel::Vertex> vertices = {
-            {{0.0f, -0.5f}},
-            {{0.5f, 0.5f}},
-            {{-0.5f, 0.5f}}
+            {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
         };
         kmrModel = std::make_unique<KmrModel>(kmrDevice, vertices);
     }
