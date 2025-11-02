@@ -11,6 +11,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # --- Vulkan SDK
 find_package(Vulkan REQUIRED)
 
+# --- glslc (from Vulkan SDK) ---
+find_program(GLSLC_EXECUTABLE NAMES glslc HINTS $ENV{VULKAN_SDK}/Bin REQUIRED)
+
 # ---- GLFW (precompiled, local) ---------------------------------------------
 set(GLFW_ROOT "${CMAKE_SOURCE_DIR}/external/glfw")
 
@@ -34,17 +37,34 @@ add_executable(kmr
     src/kmr_pipeline.cpp
     src/kmr_device.cpp
     src/kmr_swap_chain.cpp
+    src/kmr_model.cpp
 )
 
-# --- Runtime assets (shaders) ---
-set(SHADER_DIR "${CMAKE_SOURCE_DIR}/shaders")
+# --- Shader compilation (GLSL -> SPIR-V) ---
+file(GLOB SHADER_SOURCES "${CMAKE_SOURCE_DIR}/shaders/*.vert" "${CMAKE_SOURCE_DIR}/shaders/*.frag")
+set(SPV_OUTPUTS)
+foreach(shader ${SHADER_SOURCES})
+    get_filename_component(fname "${shader}" NAME)
+    set(out "${CMAKE_BINARY_DIR}/shaders/${fname}.spv")
+    add_custom_command(
+        OUTPUT "${out}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
+        COMMAND ${GLSLC_EXECUTABLE} "${shader}" -o "${out}"
+        DEPENDS "${shader}"
+        COMMENT "Compiling GLSL ${fname} -> SPIR-V"
+        VERBATIM
+    )
+    list(APPEND SPV_OUTPUTS "${out}")
+endforeach()
+add_custom_target(compile_shaders ALL DEPENDS ${SPV_OUTPUTS})
+add_dependencies(kmr compile_shaders)
 
-# Copy shaders next to the built executable after each build
+# Copy compiled shaders next to the built executable after each build
 add_custom_command(
     TARGET kmr POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:kmr>/shaders"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${SHADER_DIR}" "$<TARGET_FILE_DIR:kmr>/shaders"
-    COMMENT "Copying shaders to the runtime output directory"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_BINARY_DIR}/shaders" "$<TARGET_FILE_DIR:kmr>/shaders"
+    COMMENT "Copying compiled shaders to the runtime output directory"
 )
 
 # In Visual Studio, run the app with the exe folder as working directory

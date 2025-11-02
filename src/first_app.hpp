@@ -4,6 +4,7 @@
 #include "kmr_window.hpp"
 #include "kmr_device.hpp"
 #include "kmr_swap_chain.hpp"
+#include "kmr_model.hpp"
 
 // std
 #include <memory>
@@ -24,6 +25,7 @@ namespace kmr {
         void run();
 
     private:
+        void loadModels();
         void createPipelineLayout();
         void createPipeline();
         void createCommandBuffers();
@@ -35,5 +37,6 @@ namespace kmr {
         std::unique_ptr<KmrPipeline> kmrPipeline;
         VkPipelineLayout pipelineLayout;
         std::vector<VkCommandBuffer> commandBuffers;
+        std::unique_ptr<KmrModel> kmrModel;
     };
 } // namespace kmr

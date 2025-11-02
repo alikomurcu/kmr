@@ -7,6 +7,7 @@
 namespace kmr {
 
     FirstApp::FirstApp() {
+        loadModels();
         createPipelineLayout();
         createPipeline();
         createCommandBuffers();
@@ -23,6 +24,15 @@ namespace kmr {
         }
 
         vkDeviceWaitIdle(kmrDevice.device());
+    }
+
+    void FirstApp::loadModels() {
+        std::vector<KmrModel::Vertex> vertices = {
+            {{0.0f, -0.5f}},
+            {{0.5f, 0.5f}},
+            {{-0.5f, 0.5f}}
+        };
+        kmrModel = std::make_unique<KmrModel>(kmrDevice, vertices);
     }
 
     void FirstApp::createPipelineLayout() {
@@ -82,8 +92,9 @@ namespace kmr {
             vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             kmrPipeline->bind(commandBuffers[i]);
-            vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
-
+            kmrModel->bind(commandBuffers[i]);
+            kmrModel->draw(commandBuffers[i]);
+            
             vkCmdEndRenderPass(commandBuffers[i]);
 
             if (vkEndCommandBuffer(commandBuffers[i]) != VK_SUCCESS) {

@@ -11,6 +11,7 @@ Makefile
 *.ninja_log
 compile_commands.json
 Testing/
+CMakeSettings.json
 
 # Visual Studio (MSVC)
 .vs/
