@@ -6,23 +6,44 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # --- Vulkan SDK
 find_package(Vulkan REQUIRED)
 
 # --- glslc (from Vulkan SDK) ---
-find_program(GLSLC_EXECUTABLE NAMES glslc HINTS $ENV{VULKAN_SDK}/Bin REQUIRED)
+set(GLSLC_HINT_DIRS
+    $ENV{VULKAN_SDK}/Bin
+    $ENV{VULKAN_SDK}/bin
+    $ENV{VULKAN_SDK}/macOS/bin
+)
+find_program(GLSLC_EXECUTABLE NAMES glslc HINTS ${GLSLC_HINT_DIRS} REQUIRED)
 
-# ---- GLFW (precompiled, local) ---------------------------------------------
+# ---- GLFW ------------------------------------------------------------------
 set(GLFW_ROOT "${CMAKE_SOURCE_DIR}/external/glfw")
 
-# Static .lib
-add_library(glfw3 STATIC IMPORTED GLOBAL)
-set_target_properties(glfw3 PROPERTIES
-    IMPORTED_LOCATION "${GLFW_ROOT}/lib-vc2022/glfw3.lib"
-    INTERFACE_INCLUDE_DIRECTORIES "${GLFW_ROOT}/include"
-)
+set(GLFW_LINK_TARGET glfw3)
+
+if (WIN32)
+    # Static .lib shipped with the repo for Windows
+    add_library(glfw3 STATIC IMPORTED GLOBAL)
+    set_target_properties(glfw3 PROPERTIES
+        IMPORTED_LOCATION "${GLFW_ROOT}/lib-vc2022/glfw3.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "${GLFW_ROOT}/include"
+    )
+else()
+    # Rely on system-provided GLFW (e.g. Homebrew on macOS)
+    find_package(glfw3 REQUIRED)
+    if (TARGET glfw)
+        set(GLFW_LINK_TARGET glfw)
+    elseif (TARGET glfw3)
+        set(GLFW_LINK_TARGET glfw3)
+    elseif (TARGET glfw::glfw)
+        set(GLFW_LINK_TARGET glfw::glfw)
+    else()
+        message(FATAL_ERROR "glfw3 was found but no usable CMake target is available.")
+    endif()
+endif()
 
 # On Windows, GLFW needs these system libs when linking statically
 if (MSVC)
@@ -85,6 +106,10 @@ target_include_directories(kmr PRIVATE
 
 target_link_libraries(kmr PRIVATE
     Vulkan::Vulkan
-    glfw3
+    ${GLFW_LINK_TARGET}
     ${GLFW_WIN_SYS_LIBS}
 )
+
+if (APPLE)
+    target_compile_definitions(kmr PRIVATE VK_ENABLE_BETA_EXTENSIONS)
+endif()
