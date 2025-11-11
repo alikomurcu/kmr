@@ -2,6 +2,7 @@
 
 #include "kmr_pipeline.hpp"
 #include "kmr_window.hpp"
+#include "kmr_game_object.hpp"
 #include "kmr_device.hpp"
 #include "kmr_swap_chain.hpp"
 #include "kmr_model.hpp"
@@ -10,8 +11,10 @@
 #include <memory>
 #include <vector>
 
-namespace kmr {
-    class FirstApp {
+namespace kmr
+{
+    class FirstApp
+    {
     public:
         static constexpr int WIDTH = 800;
         static constexpr int HEIGHT = 600;
@@ -25,18 +28,22 @@ namespace kmr {
         void run();
 
     private:
-        void loadModels();
+        void loadGameObjects();
         void createPipelineLayout();
         void createPipeline();
         void createCommandBuffers();
+        void freeCommandBuffers();
         void drawFrame();
-    
-        KmrWindow kmrWindow{ WIDTH, HEIGHT, "MERHABA VULKAN!" };
-        KmrDevice kmrDevice{ kmrWindow };
-        KmrSwapChain kmrSwapChain{ kmrDevice, kmrWindow.getExtent() };
+        void recreateSwapChain();
+        void recordCommandBuffer(int index);
+        void renderGameObjects(VkCommandBuffer commandBuffer);
+
+        KmrWindow kmrWindow{WIDTH, HEIGHT, "MERHABA VULKAN!"};
+        KmrDevice kmrDevice{kmrWindow};
+        std::unique_ptr<KmrSwapChain> kmrSwapChain;
         std::unique_ptr<KmrPipeline> kmrPipeline;
         VkPipelineLayout pipelineLayout;
         std::vector<VkCommandBuffer> commandBuffers;
-        std::unique_ptr<KmrModel> kmrModel;
+        std::vector<KmrGameObject> gameObjects;
     };
 } // namespace kmr
