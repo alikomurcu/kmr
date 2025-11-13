@@ -59,6 +59,8 @@ add_executable(kmr
     src/kmr_device.cpp
     src/kmr_swap_chain.cpp
     src/kmr_model.cpp
+    src/kmr_renderer.cpp
+    src/simple_render_system.cpp
 )
 
 # --- Shader compilation (GLSL -> SPIR-V) ---
