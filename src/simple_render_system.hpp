@@ -4,6 +4,7 @@
 #include "kmr_game_object.hpp"
 #include "kmr_pipeline.hpp"
 #include "kmr_model.hpp"
+#include "kmr_camera.hpp"
 
 // std
 #include <memory>
@@ -19,7 +20,7 @@ namespace kmr
 
         SimpleRenderSystem(const SimpleRenderSystem &) = delete;
         SimpleRenderSystem &operator=(const SimpleRenderSystem &) = delete;
-        void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<KmrGameObject> &gameObjects);
+        void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<KmrGameObject> &gameObjects, const KmrCamera &camera);
 
     private:
         void createPipelineLayout();

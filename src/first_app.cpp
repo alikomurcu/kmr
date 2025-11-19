@@ -1,5 +1,5 @@
 #include "first_app.hpp"
-
+#include "kmr_camera.hpp"
 #include "simple_render_system.hpp"
 
 // libs
@@ -25,14 +25,24 @@ namespace kmr
     void FirstApp::run()
     {
         SimpleRenderSystem simpleRenderSystem{kmrDevice, kmrRenderer.getSwapChainRenderPass()};
+        KmrCamera camera{};
+        // example camera setup
+        camera.setViewTarget(
+            glm::vec3{-1.f, -2.f, 2.f},
+            glm::vec3{0.f, 0.f, 2.5f});
+
         while (!kmrWindow.shouldClose())
         {
             glfwPollEvents();
+            float aspect = kmrRenderer.getAspectRatio();
+            // camera.setOrthographicProjection(-aspect, aspect, -1, 1, -1, 1);
+            camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
+
             if (auto commandBuffer = kmrRenderer.beginFrame())
             {
                 // make the render passes here, for example: shadow pass, post processing pass, etc.
                 kmrRenderer.beginSwapChainRenderPass(commandBuffer);
-                simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
+                simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera);
 
                 kmrRenderer.endSwapChainRenderPass(commandBuffer);
                 kmrRenderer.endFrame();
@@ -107,7 +117,7 @@ namespace kmr
         std::shared_ptr<KmrModel> cubeModel = createCubeModel(kmrDevice, {0.f, 0.f, 0.f});
         auto cube = KmrGameObject::createGameObject();
         cube.model = cubeModel;
-        cube.transform.translation = {0.f, 0.f, 0.5f};
+        cube.transform.translation = {0.f, 0.f, 2.5f};
         cube.transform.scale = {0.5f, 0.5f, 0.5f};
         gameObjects.push_back(std::move(cube));
     }

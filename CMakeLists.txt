@@ -61,6 +61,7 @@ add_executable(kmr
     src/kmr_model.cpp
     src/kmr_renderer.cpp
     src/simple_render_system.cpp
+    src/kmr_camera.cpp
 )
 
 # --- Shader compilation (GLSL -> SPIR-V) ---

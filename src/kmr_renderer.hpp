@@ -26,6 +26,11 @@ namespace kmr
             return kmrSwapChain->getRenderPass();
         }
 
+        float getAspectRatio() const
+        {
+            return kmrSwapChain->extentAspectRatio();
+        }
+
         bool isFrameInProgress() const { return isFrameStarted; }
 
         VkCommandBuffer getCurrentCommandBuffer() const
