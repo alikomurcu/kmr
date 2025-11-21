@@ -105,6 +105,7 @@ install(DIRECTORY "${SHADER_DIR}" DESTINATION .)
 # Make the headers visible to kmr
 target_include_directories(kmr PRIVATE
     "${CMAKE_SOURCE_DIR}/external/glm"
+    "${CMAKE_SOURCE_DIR}/external/tinyobjloader"
     "${CMAKE_SOURCE_DIR}/src"
 )
 
