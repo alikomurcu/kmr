@@ -7,15 +7,22 @@
 namespace kmr
 {
 
-    KmrModel::KmrModel(KmrDevice &device, const std::vector<Vertex> &vertices) : kmrDevice{device}
+    KmrModel::KmrModel(KmrDevice &device, const Builder &builder) : kmrDevice{device}
     {
-        createVertexBuffers(vertices);
+        createVertexBuffers(builder.vertices);
+        createIndexBuffers(builder.indices);
     }
 
     KmrModel::~KmrModel()
     {
         vkDestroyBuffer(kmrDevice.device(), vertexBuffer, nullptr);
         vkFreeMemory(kmrDevice.device(), vertexBufferMemory, nullptr);
+
+        if (hasIndexBuffer)
+        {
+            vkDestroyBuffer(kmrDevice.device(), indexBuffer, nullptr);
+            vkFreeMemory(kmrDevice.device(), indexBufferMemory, nullptr);
+        }
     }
 
     void KmrModel::createVertexBuffers(const std::vector<Vertex> &vertices)
@@ -23,17 +30,72 @@ namespace kmr
         vertexCount = static_cast<uint32_t>(vertices.size());
         assert(vertexCount >= 3 && "Vertex count must be at least 3");
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertexCount;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+
         kmrDevice.createBuffer(
             bufferSize,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            stagingBuffer,
+            stagingBufferMemory);
+
+        void *data;
+        vkMapMemory(kmrDevice.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+        vkUnmapMemory(kmrDevice.device(), stagingBufferMemory);
+
+        kmrDevice.createBuffer(
+            bufferSize,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             vertexBuffer,
             vertexBufferMemory);
 
+        kmrDevice.copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+        vkDestroyBuffer(kmrDevice.device(), stagingBuffer, nullptr);
+        vkFreeMemory(kmrDevice.device(), stagingBufferMemory, nullptr);
+    }
+
+    void KmrModel::createIndexBuffers(const std::vector<uint32_t> &indices)
+    {
+        indexCount = static_cast<uint32_t>(indices.size());
+        hasIndexBuffer = indexCount > 0;
+        if (!hasIndexBuffer)
+        {
+            return;
+        }
+
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indexCount;
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+
+        kmrDevice.createBuffer(
+            bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            stagingBuffer,
+            stagingBufferMemory);
+
         void *data;
-        vkMapMemory(kmrDevice.device(), vertexBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-        vkUnmapMemory(kmrDevice.device(), vertexBufferMemory);
+        vkMapMemory(kmrDevice.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+        memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+        vkUnmapMemory(kmrDevice.device(), stagingBufferMemory);
+
+        kmrDevice.createBuffer(
+            bufferSize,
+            VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            indexBuffer,
+            indexBufferMemory);
+
+        kmrDevice.copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+        vkDestroyBuffer(kmrDevice.device(), stagingBuffer, nullptr);
+        vkFreeMemory(kmrDevice.device(), stagingBufferMemory, nullptr);
     }
 
     void KmrModel::bind(VkCommandBuffer commandBuffer)
@@ -41,11 +103,23 @@ namespace kmr
         VkBuffer buffers[] = {vertexBuffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+
+        if (hasIndexBuffer)
+        {
+            vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        }
     }
 
     void KmrModel::draw(VkCommandBuffer commandBuffer)
     {
-        vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+        if (hasIndexBuffer)
+        {
+            vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+        }
+        else
+        {
+            vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+        }
     }
 
     std::vector<VkVertexInputBindingDescription> KmrModel::Vertex::getBindingDescriptions()
