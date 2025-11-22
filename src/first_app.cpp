@@ -74,11 +74,11 @@ namespace kmr
     {
         std::shared_ptr<KmrModel> model = KmrModel::createModelFromFile(
             kmrDevice,
-            "../models/smooth_vase.obj");
+            "../models/flat_vase.obj");
         auto gameObj = KmrGameObject::createGameObject();
         gameObj.model = model;
-        gameObj.transform.translation = {0.f, 0.f, 2.5f};
-        gameObj.transform.scale = glm::vec3{1.f};
+        gameObj.transform.translation = {0.f, 0.5f, 2.5f};
+        gameObj.transform.scale = glm::vec3{3.f, 1.f, 3.f};
         gameObjects.push_back(std::move(gameObj));
     }
 

@@ -16,7 +16,7 @@ namespace kmr
     struct SimplePushConstantData
     {
         glm::mat4 transform{1.f};
-        alignas(16) glm::vec3 color;
+        glm::mat4 normalMat{1.f};
     };
 
     SimpleRenderSystem::SimpleRenderSystem(KmrDevice &device, VkRenderPass renderPass) : kmrDevice{device}
@@ -70,8 +70,9 @@ namespace kmr
         for (auto &gameObject : gameObjects)
         {
             SimplePushConstantData push{};
-            push.color = gameObject.color;
-            push.transform = projectionView * gameObject.transform.mat4();
+            auto modelMat = gameObject.transform.mat4();
+            push.transform = projectionView * modelMat;
+            push.normalMat = gameObject.transform.normalMat();
             vkCmdPushConstants(
                 commandBuffer,
                 pipelineLayout,
